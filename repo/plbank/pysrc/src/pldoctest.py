@@ -1491,7 +1491,6 @@ class DocTestRunner:
         summary is.  If the verbosity is not specified, then the
         DocTestRunner's verbosity is used.
         """
-       
         if verbose is None:
             verbose = self._verbose
         notests = []
@@ -1522,17 +1521,13 @@ class DocTestRunner:
                     #print(" %3d tests in %s" % (count, thing))
         if failed:
             print(self.DIVIDER)
-            #print(len(failed), " jeu de tests avec des problèmes :")
+            print(len(failed), " jeu de tests avec des problèmes :")
             failed.sort()
-            print("Test:")
             for thing, (f, t) in failed:
-                #print(" %3d tests sur %3d dans %s" % (f, t, thing))
-                
-                print("reussit:")
-                print(totalt - totalf, "\n ratés:",totalf)
+                print(" %3d tests sur %3d dans %s" % (f, t, thing))
         if verbose:
             print(totalt, "tests sur ", len(self._name2ft), " tests.")
-            print(totalt - totalf, "reussit and ", totalf, "ratés.")
+            print(totalt - totalf, "reussit and", totalf, "ratés.")
         if totalf:
             print("***Tests échoués***", totalf, " erreurs.")
         elif verbose:

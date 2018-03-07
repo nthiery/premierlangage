@@ -10,35 +10,30 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
-import os, sys
+import os, sys, docker
 from datetime import date
 from django.contrib.messages import constants as messages
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/1.10/howto/deployment/checklist/
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "o!m$n&s4=kcftm1de1m+7!36a=8x38wrr)m9)i@ru7j-*c7vgm"
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'pl-test.u-pem.fr', 'pl.u-pem.fr']
+ALLOWED_HOSTS = ['127.0.0.1', 'pl-test.u-pem.fr']
 
-# Used by mail_admins log handler, set ENABLE_MAIL_ADMINS to True to use it (DEBUG should also be set to False)
-ENABLE_MAIL_ADMINS = True
-MAIL_HOST = ''
-MAIL_PORT = 25
-ADMINS = [
-    #('Coumes Quentin',      'qcoumes@etud.u-pem.fr'),
-    #('Revuz Dominique',     'Dominique.Revuz@u-pem.fr'),
-    #('Cuvelier Nicolas',    'ncuvelie@etud.u-pem.fr'),
-]
 
 # Application definition
+
 INSTALLED_APPS = [
     'gitload',
     'playexo',
@@ -56,7 +51,7 @@ INSTALLED_APPS = [
     'django_auth_lti',
 ]
 
-MIDDLEWARE = [
+MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -70,11 +65,11 @@ MIDDLEWARE = [
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_AGE = 5*365*24*60*60
 
-LOGIN_URL = "/playexo/not_authenticated/"
+LOGIN_URL="/playexo/not_authenticated/"
 
 ROOT_URLCONF = 'serverpl.urls'
 
-#Overriding "messages.ERROR: 'error'" to danger to correspond to the bootstrap alert tag
+#Overriding 'messages.ERROR: error' to danger so that it correspond to bootstrap3 alert tag
 MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
@@ -139,87 +134,69 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-#Write email in console instead of sending it if mailing is disable or DEBUG is set to True
-if DEBUG or not ENABLE_MAIL_ADMINS:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 #Logger information
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'filters': {
         'require_debug_true': {
             '()': 'django.utils.log.RequireDebugTrue',
         },
     },
-    'formatters': {
-        'verbose': {
-            'format': '[%(asctime)-15s] %(levelname)s -- File: %(pathname)s line n°%(lineno)d -- %(message)s',
-            'datefmt': '%Y/%m/%d %H:%M:%S'
-        },
-        'simple': {
-            'format': '[%(asctime)-15s] %(levelname)s -- %(message)s',
-            'datefmt': '%Y/%m/%d %H:%M:%S'
-        },
-    },
     'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'formatter': 'verbose',
+            'filename': os.path.dirname(os.path.abspath(__file__))+'/log/'+date.today().isoformat()+'.log',
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
-        'syslog': {
-            'level': 'INFO',
-            'class': 'logging.handlers.SysLogHandler',
-            'facility': 'local7',
-            'address': '/dev/log',
-            'formatter': 'verbose'
-        },
         'mail_admins': {
             'level': 'ERROR',
             'class': 'django.utils.log.AdminEmailHandler',
-            'include_html': True,
-            'formatter': 'verbose'
+            'formatter': 'verbose',
         }
     },
     'loggers': {
-        'django':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
+        'django': {
             'level': 'INFO',
+            'handlers': ['console','file'],
+            'propagate': True,
         },
-        'sandbox':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
+        'django.request': {
+            'handlers': ['mail_admins','file','console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['file','console'],
             'level': 'INFO',
+            'propagate': False,
         },
-        'classmanagement':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
+        'django.template': {
+            'handlers': ['file','console'],
             'level': 'INFO',
+            'propagate': True,
         },
-        'documentation':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
+        'django.db.backends': {
+            'handlers': ['file','console'],
             'level': 'INFO',
-        },
-        'gitload':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
-            'level': 'INFO',
-        },
-        'playexo':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
-            'level': 'INFO',
-        },
-        'pysrc':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
-            'level': 'INFO',
-        },
-        'django_auth_lti':{
-            'handlers': ['console', 'syslog', 'mail_admins'],
-            'level': 'INFO',
-        },
-    },
+            'propagate': True,
+        }
+    }
 }
 
 AUTHENTICATION_BACKENDS = (
@@ -237,9 +214,9 @@ LTI_OAUTH_CREDENTIALS = {
 
 LANGUAGE_CODE = 'fr-FR'
 
-TIME_ZONE = 'Europe/Paris'
+TIME_ZONE = 'UTC'
 
-USE_I18N = False
+USE_I18N = True
 
 USE_L10N = True
 
@@ -259,11 +236,10 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(PROJECT_DIR, '../../../../tmp')
 MEDIA_URL = '/tmp/'
 
-REPO_ROOT = os.path.join(PROJECT_DIR,'../../../repo')
 
 # python plank packtage dir  
 PYSRCDIR = os.path.dirname(PROJECT_DIR + "/../pysrc/")
 if not PYSRCDIR in sys.path:
     sys.path.append(PYSRCDIR)
 
-DIRREPO = REPO_ROOT # TODO: replace every occurence of DIRREPO with REPO_ROOT
+DIRREPO=os.path.join(PROJECT_DIR,'../../../repo')

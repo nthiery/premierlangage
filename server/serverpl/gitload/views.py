@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-import shutil, logging
+import shutil
 from os.path import basename, splitext
 
 from django.shortcuts import render, redirect
@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 from gitload.browser import Browser
-from gitload.models import PLTP, Repository, PL
+from gitload.models import PLTP, Repository, PL, Strategy
 from gitload.utils import create_breadcrumb
 
 from playexo.models import Activity
@@ -19,8 +19,12 @@ from playexo.views import try_pl
 from serverpl.settings import DIRREPO
 from serverpl.decorator import can_gitload
 
-logger = logging.getLogger(__name__)
 
+@login_required
+@can_gitload
+def home(request):
+    return render(request, 'gitload/home.html', {
+    })
 
 @login_required
 @can_gitload
@@ -31,8 +35,6 @@ def index(request):
     
     if (request.method == 'POST'):
         repo_url = request.POST.get('repo_url', "")
-        repo_username = request.POST.get('username', "")
-        repo_password = request.POST.get('password', "")
         repo_name = request.POST.get('repo_name', "")
         repo_delete = request.POST.get('repo_delete', "")
         
@@ -40,27 +42,21 @@ def index(request):
             try:
                 Repository.objects.get(name=repo_delete).delete()
                 messages.warning(request, "Le dépot <b>"+repo_delete+"</b> a bien été supprimé !")
-            except Exception as e:
-                logger.warning("Failed to delete repository '"+repo_delete+":", exec_info=True)
-                messages.error(request, "Erreur lors de la suppression du dépot <b>"+repo_delete+"</b>... Si l'erreur persiste, merci de contacter un administrateur")
+            except:
+                messages.error(request, "Erreur lors de la suppression du dépot <b>"+repo_delete+"</b>...")
             
         elif (repo_url != ""): #If new repository
             repo_name = splitext(basename(repo_url))[0]
             try:
                 repo, created = Repository.objects.get_or_create(name=repo_name, url=repo_url, owner=request.user.get_username())
                 browser = Browser(repo)
-                cloned, feedback = browser.get_repo(repo_username, repo_password)
-                if (not cloned):
-                    try:
-                        shutil.rmtree(browser.root, ignore_errors=True)
-                    except:
-                        pass
+                if (not browser.get_repo()):
+                    shutil.rmtree(browser.root)
                     error_url = True
-                    messages.error(request, feedback)
+                    messages.error(request, "Dépot <b>" + browser.url + "</b> introuvable. Merci de vérifier l'adresse ou votre connexion internet.")
                     repo.delete()
                 else:
-                    messages.success(request, "Dépot <b>" + browser.url + "</b> ajouté avec succès ! " + feedback)
-                    logger.info("Repository '"+repo.name+" ("+browser.url+")' has been added to the database.")
+                    messages.success(request, "Dépot <b>" + browser.url + "</b> ajouté avec succès !")
             except IntegrityError:
                 messages.error(request, 'Un dépot avec pour nom "' + repo_name + '" existe déjà. Si ce n\'est pas celui que vous souhaitez ajouter, merci de changer le nom de votre dépot.')
                 
@@ -87,46 +83,57 @@ def browse(request):
     
     browser = Browser(None, dic=request.session["browser"])
     ask_force = False
+    force = False
     plx_path = ""
     
     if (request.method == 'POST'):
         git_path = request.POST.get('git_path', "")
         plx_path = request.POST.get('exported', "")
-
-        if git_path: # Changing directory
+        if git_path: #Changing directory
             browser.cd(git_path)
         
-        elif plx_path: # Loading a PLTP / Testing PL
+        if plx_path: #Loading a PLTP
             repo_object = Repository.objects.get(name=browser.name)
-            force = (request.POST.get('force', "False") == "True")
-            
+            if (request.POST.get('force', "False") == "True"):
+                force = True
+                
             if plx_path.endswith(".pltp"):
                 plx, msg = browser.load_pltp(plx_path, repo_object, force)
                 filetype = "PLTP"
+            elif plx_path.endswith(".pls"):
+                plx, msg = browser.load_pls(plx_path, repo_object, force)
+                filetype = "PLS"
             elif plx_path.endswith(".pl"):
                 plx, msg = browser.load_pl(plx_path, repo_object)
                 filetype = "PL"
                 
-            if (not plx): # Loading or testing failed
+            if (not plx):
                 if (msg):
                     msg = "<br>".join(msg.split("\n"))
                     messages.error(request, msg)
                 else:
                     ask_force = True
-            elif plx and filetype == "PL": # Testing PL
+            elif plx and filetype == "PL":
                 msg = "<br>".join(msg.split("\n"))
                 request.session['exercise'] = None
                 return try_pl(request, plx, msg)
                 
-            else: # Loading PLTP
-                if msg: # Show warnings
+            else:
+                if msg:
                     msg = "<br>".join(msg.split("\n"))
                     messages.warning(request, msg)
-                    
+                messages.success(request, "Le "+filetype+" <b>"+plx_path+"</b> a bien été chargé.")
                 if filetype == "PLTP":
-                    url_lti = request.scheme + "://" + request.get_host()+"/playexo/lti/"+plx.name+"/"+plx.sha1+"/"
-                    url_test = "/playexo/activity/test/"+plx.name+"/"+plx.sha1+"/"
-                    messages.success(request, "L'activité <b>'"+plx.name+"'</b> a bien été créée et a pour URL LTI: <br>&emsp;&emsp;&emsp;'"+url_lti+"' <p id=\"url\" hidden>"+url_lti+"</p><button style=\"height: 25px;padding: 0 5px;\" class=\"btn btn-success\" onclick=\"copyToClipboard('#url')\"><span class=\"glyphicon glyphicon-edit\"></span> Copier</button><br>Elle apparaitra dans la liste ci-dessous lorsqu'une personne cliquera sur le lien depuis un client LTI. Pour la tester en local, cliquez <a target=\"_blank\" href=\""+url_test+"\">ici</a>.""")
+                    strategy = Strategy.objects.get(name='python')
+                    activity = Activity(id=0, pltp=plx, strategy=strategy, name=plx.name)
+                    activity.save()
+                    url_lti = request.scheme + "://" + request.get_host()+"/playexo/activity/lti/"+activity.name+"/"+activity.strategy.name+"/"+activity.pltp.sha1+"/"
+                    url_test = "/playexo/activity/test/"+activity.name+"/"+activity.strategy.name+"/"+activity.pltp.sha1+"/"
+                    messages.success(request, "L'activité <b>'"+activity.name+"'</b> a bien été créée et a pour URL LTI: <br>&emsp;&emsp;&emsp;'"+url_lti+"' <p id=\"url\" hidden>"+url_lti+"</p><button style=\"height: 25px;padding: 0 5px;\" class=\"btn btn-success\" onclick=\"copyToClipboard('#url')\"><span class=\"glyphicon glyphicon-edit\"></span> Copier</button><br>Elle apparaitra dans la liste ci-dessous lorsqu'une personne cliquera sur le lien depuis un client LTI. Pour la tester en local, cliquez <a target=\"_blank\" href=\""+url_test+"\">ici</a>.""")
+            
+        
+        if (request.POST.get('refresh', False)):
+            browser.get_repo()
     
     browser.parse_content()
     request.session["browser"] = browser.__dict__
@@ -264,10 +271,11 @@ def loaded_pltp(request):
                 except_msg = msg
                 messages.error(request, "La mise à jour du pltp à échoué: "+except_msg.replace("<", "[").replace(">", "]"))
             else:
-                activity = Activity(id=0, pltp=pltp, name=pltp.name)
+                strategy = Strategy.objects.get(name='python')  
+                activity = Activity(id=0, pltp=pltp, strategy=strategy, name=pltp.name)
                 activity.save()
-                url_lti = request.get_host()+"/playexo/activity/lti/"+activity.name+"/"+activity.pltp.sha1+"/"
-                url_test = "/playexo/activity/test/"+activity.name+"/"+activity.pltp.sha1+"/"
+                url_lti = request.get_host()+"/playexo/activity/lti/"+activity.name+"/"+activity.strategy.name+"/"+activity.pltp.sha1+"/"
+                url_test = "/playexo/activity/test/"+activity.name+"/"+activity.strategy.name+"/"+activity.pltp.sha1+"/"
                 if (msg):
                     messages.warning(request, msg)
                 messages.success(request, "Le PLTP <b>"+pltp.name+"</b> a été rechargé avec succès !")
@@ -278,7 +286,40 @@ def loaded_pltp(request):
         'pltp': allpltp,
         'domain': "http://"+request.get_host(),
     })
-
+    
+@login_required
+@can_gitload
+def loaded_pls(request):
+    """ View for [...]/gitload/loaded_pls -- template: loaded_pls.html"""
+    allpls = Strategy.objects.all();
+    
+    if (request.method == 'POST'):
+        pls_delete = request.POST.get('pls_delete', "")
+        rel_path = request.POST.get('rel_path', "")
+        repo_name = request.POST.get('repo', "")
+        
+        if (pls_delete != ""):
+            try:
+                to_del = Strategy.objects.get(name=pls_delete)
+                name_del = to_del.name
+                to_del.delete()
+                messages.warning(request, "Le PLS <b>"+name_del+"</b> a bien été supprimé !")
+            except:
+                messages.error(request, "Erreur lors de la suppression du PLS <b>"+name_del+"</b>...")
+                
+        elif (rel_path != "" and repo_name != ""):
+            repo = Repository.objects.get(name=repo_name)
+            browser = Browser(None, dic=request.session["browser"])
+            pls, msg = browser.load_pls(rel_path, repo, True)
+            if (not pls):
+                messages.error(request, "<b>Erreur:</b> "+msg)
+            else:
+                messages.success(request, "Le PLS <b>"+pls.name+"</b> a été rechargé avec succès !")
+    
+    return render(request, 'gitload/loaded_pls.html', {
+        'pls': allpls,
+    })
+    
 @login_required
 @can_gitload
 def loaded_pl(request):
@@ -294,10 +335,14 @@ def loaded_pl(request):
 def activity(request):
     activities = Activity.objects.all()
     pltps = PLTP.objects.all()
+    strategies = Strategy.objects.all()
     activity = None
     
     if (request.method == 'POST'):
         activity_delete = request.POST.get('activity_delete', "")
+        activity_name = request.POST.get('activity_name', "")
+        activity_pltp = request.POST.get('activity_pltp', "")
+        activity_strategy = request.POST.get('activity_strategy', "")
         
         if (activity_delete != ""):
             try:
@@ -307,11 +352,24 @@ def activity(request):
                 messages.warning(request, "L'Activité <b>"+name_del+"</b> a bien été supprimée !")
             except Exception as e:
                 messages.error(request, "Erreur lors de la suppression de l'Activité <b>ID: "+activity_delete+"</b>: "+str(type(e)).replace("<", "[").replace(">", "]") +": " +str(e).replace("<", "[").replace(">", "]"))
-
+                
+        elif (activity_name != "" and activity_pltp != "" and activity_strategy != ""):
+            if Activity.objects.get(name=activity_name):
+                messages.error(request, "Une activité avec ce nom existe déjà")
+            else:
+                pltp = PLTP.objects.get(sha1=activity_pltp)
+                strategy = Strategy.objects.get(name=activity_strategy)
+                activity = Activity(id=0, pltp=pltp, strategy=strategy, name=activity_name)
+                activity.save()
+                url_lti = request.get_host()+"/playexo/activity/lti/"+activity.name+"/"+activity.strategy.name+"/"+activity.pltp.sha1+"/"
+                url_test = "/playexo/activity/test/"+activity.pltp.sha1+"/"+activity.strategy.name+"/"
+                messages.success(request, "L'activité <b>'"+activity.name+"'</b> a bien été créée et a pour URL LTI: <a>"+url_lti+"</a>.<br>&emsp; &emsp; Elle apparaitra dans la liste ci-dessous lorsqu'une personne cliquera sur le lien depuis un client LTI. Pour la tester en local, cliquez <a target=\"_blank\" href=\""+url_test+"\">ici</a>.")
+            
         
     return render(request, 'gitload/activity.html', {
         'activities': activities,
         'pltps': pltps,
+        'strategies': strategies,
         'activity': activity,
         'domain': "http://"+request.get_host(),
     })

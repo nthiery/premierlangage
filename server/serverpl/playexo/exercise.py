@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Python 3.5.4
+# Python [Version]
 #
 #  Author: Coumes Quentin     Mail: qcoumes@etud.u-pem.fr
 #  Created: 2017-07-03
 #  Last Modified: 2017-07-03
 
-import json, timeout_decorator, time
+import json
 
 from django.template import Template, RequestContext
 from gitload.models import PLTP
 from playexo.models import Answer
 from classmanagement.models import PLUser
 
-lang = ['abap', 'abc', 'actionscript', 'ada', 'apache_conf', 'applescript', 'asciidoc', 'assembly_x86', 'autohotkey', 'batchfile', 'bro', 'c9search', 'c_cpp', 'cirru', 'clojure', 'cobol', 'coffee', 'coldfusion', 'csharp', 'csound_document', 'csound_orchestra', 'csound_score', 'css', 'curly', 'd', 'dart', 'diff', 'django', 'dockerfile', 'dot', 'drools', 'eiffel', 'ejs', 'elixir', 'elm', 'erlang', 'forth', 'fortran', 'ftl', 'gcode', 'gherkin', 'gitignore', 'glsl', 'gobstones', 'golang', 'graphqlschema', 'groovy', 'haml', 'handlebars', 'haskell', 'haskell_cabal', 'haxe', 'hjson', 'html', 'html_elixir', 'html_ruby', 'ini', 'io', 'jack', 'jade', 'java', 'javascript', 'json', 'jsoniq', 'jsp', 'jssm', 'jsx', 'julia', 'kotlin', 'latex', 'lean', 'less', 'liquid', 'lisp', 'live_script', 'livescript', 'logiql', 'lsl', 'lua', 'luapage', 'lucene', 'makefile', 'markdown', 'mask', 'matlab', 'maze', 'mel', 'mips_assembler', 'mipsassembler', 'mushcode', 'mysql', 'nix', 'nsis', 'objectivec', 'ocaml', 'pascal', 'perl', 'pgsql', 'php', 'pig', 'plain_text', 'powershell', 'praat', 'prolog', 'properties', 'protobuf', 'python', 'r', 'razor', 'rdoc', 'red', 'rhtml', 'rst', 'ruby', 'rust', 'sass', 'scad', 'scala', 'scheme', 'scss', 'sh', 'sjs', 'smarty', 'snippets', 'soy_template', 'space', 'sparql', 'sql', 'sqlserver', 'stylus', 'svg', 'swift', 'swig', 'tcl', 'tex', 'text', 'textile', 'toml', 'tsx', 'turtle', 'twig', 'typescript', 'vala', 'vbscript', 'velocity', 'verilog', 'vhdl', 'wollok', 'xml', 'xquery', 'yaml']
 default_load = '{% load bootstrap3 %}{% load static %}{% load markdown_deux_tags %}{% load input_fields_ajax %}{% load json_filter %}'
 pls_known = [
     ('form', 'form'), ('css', 'css'), ('pl', 'exo'),
@@ -25,7 +24,6 @@ pls_known = [
 class Exercise:
     def __init__(self, pl_dic):
         self.dic = pl_dic
-        self.dic['authorized_lang'] = lang
     
     def evaluate(self, answer):
         try:
@@ -39,7 +37,6 @@ class Exercise:
         except Exception as e:
             return None, ("/!\ ATTENTION: La fonction d'évaluation de cet exercice est incorrecte, merci de prévenir votre professeur:<br>Error - "+str(type(e)).replace("<", "[").replace(">", "]")+": "+str(e))
     
-    @timeout_decorator.timeout(5, use_signals=False)
     def __build(self):
         if 'build' in self.dic:
             exec(self.dic['build'], globals())
@@ -65,7 +62,6 @@ class Exercise:
 
         
         pltp = PLTP.objects.get(sha1=self.dic['pltp_sha1'])
-        pltp_json = json.loads(pltp.json)
         pl_list = list()
         for item in pltp.pl.all():
             state = Answer.pl_state(item, request.user)
@@ -83,10 +79,6 @@ class Exercise:
         context.update(dic)
         context['is_pl'] = is_pl
         context['pl_list'] = pl_list
-        if 'custom_nav' in pltp_json:
-            context['custom_nav'] = Template(pltp_json['custom_nav'])
-        else:
-            context['custom_nav'] = 'playexo/default_nav.html'
         
         if success:
             context['success'] = success
@@ -96,7 +88,6 @@ class Exercise:
         return context
     
     def __get_template(self):
-        
         if 'pl_sha1' in self.dic:
             raw = '{% extends "playexo/default_pl_exo.html" %}'+default_load
             for key, block_name in pls_known:

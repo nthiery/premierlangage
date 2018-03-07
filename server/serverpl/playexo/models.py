@@ -1,43 +1,21 @@
 # coding: utf-8
 
-from datetime import datetime
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from gitload.models import PLTP, PL
 
+from gitload.models import Strategy, PLTP, PL
 
 
 class Activity(models.Model):
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=200, null=False)
-    pltp = models.ForeignKey(PLTP, null=False, on_delete=models.CASCADE)
-    open = models.BooleanField(null = False, default = True)
-    
-    def __str__(self):
-        return str(self.id)+" "+self.name
+    id = models.CharField(max_length=30, null=False, default=0)
+    name = models.CharField(max_length=200, primary_key=True, null=False)
+    strategy = models.ForeignKey(Strategy, null=False)
+    pltp = models.ForeignKey(PLTP, null=False)
 
-
-class ActivityTest(models.Model):
-    name = models.CharField(max_length=200, null=False)
-    pltp = models.ForeignKey(PLTP, null=False,  on_delete=models.CASCADE)
-    date = models.DateTimeField(null=False, default=timezone.now)
-    
-    
-    @staticmethod
-    def delete_outdated():
-        now = datetime.utcnow()
-        activities = ActivityTest.objects.get.all().sort_by("date")
-        for activity in activities:
-            if (datetime.utcnow() - activity.date) > timedelta(days=1):
-                activity.delete()
-            else:
-                break
-                
-        
     def __str__(self):
         return self.name
+
 
 
 class Answer(models.Model):
@@ -49,14 +27,15 @@ class Answer(models.Model):
         (STARTED, 'Commencé'),
         (FAILED, 'Echoué'),
         (SUCCEEDED, 'Réussi'),
+        (NOT_STARTED, 'Non Commencé'),
     )
     
     value = models.TextField(max_length = 50000, null = False)
-    user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
-    pl = models.ForeignKey(PL, null=False, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, null = False)
+    pl = models.ForeignKey(PL, null = False)
     seed = models.CharField(max_length=50, null=True)
     date = models.DateTimeField(null = False, default=timezone.now)
-    state = models.CharField(max_length=2, choices=STATE, null=False, default=STARTED)
+    state = models.CharField(max_length=2, choices=STATE, null = False, default=STARTED)
     
     
     @staticmethod

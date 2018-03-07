@@ -1,4 +1,4 @@
-{% extends custom_nav %}
+{% extends "playexo/default_nav.html" %}
 
 {% block tag %}
     {% load markdown_deux_tags %}
@@ -15,14 +15,8 @@
         </div>
         
         <div class="panel-body">
-            <pre><u>Note de l'enseignant (visible seulement par les enseignant):</u><br>
-            {% if request.user.pluser.can_load and "teacher" %}{{ teacher|markdown }}{% endif %}</pre>
             {% if "introduction" %}{{ introduction|markdown }}{% endif %}
-            {% if "introductionh" %}{{ introductionh|safe }}{% endif %}
-            <br>
-            <center></center><a style="white-space: normal;" href="{{ request.path }}?action=pl&pl_sha1={{pl_list.0.0.sha1}}" type="button" class="btn btn-success btn-lg">
-                Commencer
-            </a></center>
+            {% if "introduction" %}{{ introductionh|safe }}{% endif %}
         </div>
     </div>
 {% endblock %}

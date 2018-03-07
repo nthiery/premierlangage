@@ -12,7 +12,7 @@ from pathlib import Path
 import sys,traceback # for printstack
 
 from pl import ErrorPL, PlSyntaxError, PlMultilineError, InvalidExtensionError, dicfusion
-from serverpl.settings import REPO_ROOT
+
 import cd
 
 import subprocess
@@ -21,7 +21,7 @@ import subprocess
  plparser.py
   Le parsing des fichiers pl et pltp et autres types de fichiers doit être réalisé par du code de ce fichier.
   Le parsing ne fait que transformer le fichier en un dictionnaire python.
-  actuellement le fichier fournis trois méthodes dicFromFile qui appel la fonction parsePlFile ou parsePltpFile,
+  actuellement le fichier fournis trois méthode diFromFile qui appel la fonction parsePlFile ou parsePltpFile,
   si l'on cherche à a jouter une nouveau type c'est ici qu'il faut ajouter une fonction parseExtFile ou Ext est l'extension capitalisée du nouveau type.
   Par exemple parsePlwFile pour les fichiers PlWims
 """
@@ -34,7 +34,14 @@ def getRepoByName(name):
     >>> getRepoByName("plbank").endswith("/premierlangage/repo/plbank")
     True
     """
-    return REPO_ROOT + '/' + name
+    if name==None:
+        name="plbank"
+    with cd.cd(os.path.dirname(__file__)):
+        prems = subprocess.Popen(['git', 'rev-parse', '--show-toplevel'],stdout=subprocess.PIPE).communicate()[0].rstrip().decode("utf-8")
+    p = Path(prems+"/repo/"+name)
+    if not p.exists():
+        raise Exception(str(p)+" doesn't exist")
+    return str(p)
 
 def localrepo(repo,name):
     if ':' in name:
@@ -54,6 +61,7 @@ def _openandsplit(filename,repo):
         with open(filename,"r") as f:
             return f.read().split("\n")
     except Exception as e:
+        traceback.print_stack(file=sys.stdout)
         raise ErrorPL("openandsplit: Can't open file '"+ filename+"': "+str(e))
 
 
@@ -166,15 +174,12 @@ def _parseOneFile(filename, repo, currentdict=dict()):
     multiline = False
     multivalue=None
     another_multiline = re.compile('\w+==$')
-    multiline_close = re.compile('^==.*$')
     for line in _openandsplit(filename,repo):
         n_line += 1
         if multiline:
             if (another_multiline.match(line)):
                 warning += "Warning (l."+str(n_line)+"): multiline value declared inside another (declared at l."+str(opened)+")."
-            if multiline_close.match(line):
-                if line != "==" :
-                    warning += " Evitez  d'avoir des caractères après les == \n"
+            if line == "==" :
                 if not multivalue:
                     raise PlMultilineError(multikey, str(opened), "Multiline value can't be null")
                 currentdict[multikey]=multivalue

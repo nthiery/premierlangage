@@ -60,6 +60,7 @@ class Executor:
         
     def execute(self):
         """ 
+        Send the environnement to the docker and evaluate the student's code.
             - If the evaluation suceeded, return a json of this dic:
                 {
                     "platform_error": [],

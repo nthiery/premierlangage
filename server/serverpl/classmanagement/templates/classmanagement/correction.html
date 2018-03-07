@@ -1,0 +1,71 @@
+
+
+{% extends "gitload/base.html" %}
+
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/block_chart.css' %}" />
+<link rel="stylesheet" href="{% static 'css/classmanagement.css' %}" />
+{% endblock %}
+
+{% block header_script %}
+<script src="{% static 'js/block_chart.js' %}"></script> 
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="panel panel-default">
+        <div class="panel-header"><h1>{{ current_pltp }}</h1></div>
+        <div class="panel-body">
+            <div class="row">
+                    <a type="button" class="btn" href="?action=previous&current={{current_user.id}}"><span class="glyphicon glyphicon-chevron-left"></span></a>
+                    <h4> {% firstof current_user.get_full_name current_user.get_username %}</h4>
+                    <a type="button" class="btn" href="?action=next&current={{current_user.id}}"><span class="glyphicon glyphicon-chevron-right"></span></a>
+                    <form action="" method="get">
+                        <label for="user_id">Aller à:</label>
+                        <input type="hidden" name="action" value="direct"/>
+                        <select onchange="this.form.submit()" class="form-control" name="current">
+                            <option>Choisissez un élève</option>
+                            {% for elem in user_list %}
+                                <option value="{{elem.id}}">{% firstof elem.get_full_name elem.get_username %}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+            </div>
+            <div class="row">
+                <table class="table table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>PL</th>
+                            <th>État</th>
+                            <th>Dernière Réponse</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for elem in answers %}
+                            <tr>
+                                <td style="width: 200px;">{{ elem.title }}</td>
+                                <td style="width: 80px;">{{ elem.state }}</td>
+                                <td><div id="editor{{forloop.counter}}" style="height: {{elem.height}}px;">{{ elem.answer.value }}</div></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<script src="/static/AceCodeEditor/ace-builds/ace-builds-master/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+
+
+<script>
+    {% for elem in answers %}
+        var editor{{forloop.counter}} = ace.edit('editor{{forloop.counter}}');
+        editor{{forloop.counter}}.session.setMode("ace/mode/python");
+        editor{{forloop.counter}}.setReadOnly(true);
+    {% endfor %}
+</script>
+{% endblock %}

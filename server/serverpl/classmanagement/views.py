@@ -78,22 +78,8 @@ def course_view(request, id):
     except:
         raise Http404("Impossible d'accéder à la page, cette classe n'existe pas.")
     if not request.user in course.user.all() and not request.user.pluser.is_admin():
-        logger.warning("User '"+request.user.username+"' denied to access course'"+course.name+"'.")
         raise PermissionDenied("Vous n'appartenez pas à cette classe et ne pouve donc y accéder.")
     
-    
-    if request.method == 'GET':
-        if request.GET.get("action", None) == "toggle_activity":
-            if not request.user.pluser.can_load():
-                logger.warning("User '"+request.user.username+"' denied to access course'"+course.name+"'.")
-                raise PermissionDenied("Vous n'avez pas les droits nécessaires pour fermer/ouvrir cette activité.")
-            try: 
-                act = Activity.objects.get(id=request.GET.get("id", None))
-                act.open = not act.open
-                act.save()
-            except:
-                raise Http404("L'activité d'ID '"+str(request.GET.get("id", None))+"' introuvable.")
-                
     #Getting profs
     query = course.user.all()
     prof = list()
@@ -121,9 +107,9 @@ def course_view(request, id):
             'name': item.name,
             'pltp_sha1': item.pltp.sha1,
             'title': json.loads(item.pltp.json)['title'],
+            'strategy_name': item.strategy.name,
+            'activity_id': item.id,
             'pl': pl,
-            'id': item.id,
-            'open': item.open,
             'width':str(100/len_pl),
         })
         
@@ -145,7 +131,6 @@ def course_summary(request, id):
     except:
         raise Http404("Impossible d'accéder à la page, cette classe n'existe pas.")
     if not request.user.pluser.is_admin() and (not request.user in course.user.all() or not request.user.pluser.have_role(Role.INSTRUCTOR)):
-        logger.warning("User '"+request.user.username+"' denied to access course'"+course.name+"'.")
         raise PermissionDenied("Vous n'êtes pas professeur de cette classe.")
     
     activities = course.activity.all().order_by("id")
@@ -185,7 +170,6 @@ def activity_summary(request, id, name):
     except:
         raise Http404("Impossible d'accéder à la page, cette classe n'existe pas.")
     if not request.user.pluser.is_admin() and (not request.user in course.user.all() or not request.user.pluser.have_role(Role.INSTRUCTOR)):
-        logger.warning("User '"+request.user.username+"' denied to access course'"+course.name+"'.")
         raise PermissionDenied("Vous n'êtes pas professeur de cette classe.")
     
     activity = Activity.objects.get(name=name)
@@ -225,7 +209,6 @@ def student_summary(request, course_id, student_id):
     except:
         raise Http404("Impossible d'accéder à la page, cette classe n'existe pas.")
     if not request.user.pluser.is_admin() and (not request.user in course.user.all() or not request.user.pluser.have_role(Role.INSTRUCTOR)):
-        logger.warning("User '"+request.user.username+"' denied to access course'"+course.name+"'.")
         raise PermissionDenied("Vous n'êtes pas professeur de cette classe.")
         
     student = User.objects.get(id=student_id)
@@ -254,20 +237,84 @@ def student_summary(request, course_id, student_id):
         'activities': tp,
         'course_id': course_id,
     })
-    
-    
+
+
 @login_required
-def redirect_activity(request, activity_id):
-    request.session['current_activity'] = activity_id
-    request.session['current_pl'] = None
+def activity_correction(request, course_id, activity_id):
+    try:
+        course = Course.objects.get(id=course_id)
+    except:
+        raise Http404("Impossible d'accéder à la page, cette classe n'existe pas ("+str(course_id)+").")
+    try:
+        activity = Activity.objects.get(id=activity_id)
+    except:
+        raise Http404("Impossible d'accéder à la page, cette activité n'existe pas ("+str(activity_id)+").")
+    if not request.user.pluser.is_admin() and (not request.user in course.user.all() or not request.user.pluser.have_role(Role.INSTRUCTOR)):
+        raise PermissionDenied("Vous n'êtes pas professeur de cette classe.")
+    
+    pltp = activity.pltp
+    action = None
+    user_id = None
+    if request.method == 'GET':
+        action = request.GET.get("action", None)
+        user_id = request.GET.get("current", None)
+        
+    user_list = course.user.all()
+    user = user_list[0] if not user_id else User.objects.get(id=user_id)
+    if action == 'next':
+        if list(user_list).index(user)+1 == len(list(user_list)):
+            index = 0
+        else:
+            index = list(user_list).index(user)+1
+        user = user_list[index]
+    elif action == 'previous':
+        if not list(user_list).index(user):
+            index = len(list(user_list))-1
+        else:
+            index = list(user_list).index(user)-1
+        user = user_list[index]
+    elif  action == 'direct':
+        user = User.objects.get(id=user_id)
+        
+    answers = list()
+    for pl in pltp.pl.all():
+        try:
+            answer = Answer.objects.filter(pl=pl, user=user).order_by("-date")
+            answer = {'value': "L'élève n'a pas répondu à cette exercice\n"} if not answer else answer[0]
+        except Exception as e:
+            answer = {'value': "La récupération de la réponse à échoué ("+str(type(e))+": "+ str(e)+").\n"}
+        
+        if isinstance(answer, dict):
+            height = 32
+            state = "Non Commencé"
+        else:
+            height = len(answer.value.split('\n'))*16
+            state = "Non Commencé" if not answer else answer.get_state_display()
+            
+        answers.append({
+            'title': json.loads(pl.json)['title'],
+            'answer': answer if answer else {'value': "L'élève n'a pas répondu à cette exercice\n"},
+            'height': height,
+            'state': state,
+        })
+    
+    return render(request, 'classmanagement/correction.html', {
+        'current_pltp': json.loads(pltp.json)['title'],
+        'current_user': user,
+        'answers': answers,
+        'user_list': user_list,
+    })
+
+
+@login_required
+def redirect_activity(request, activity_name):
+    request.session['current_activity'] = activity_name
+    request.session['exercise'] = None
     return HttpResponseRedirect(reverse(activity_view))
 
 
 @login_required
 def cycle_color_blindness(request):
-    if request.META["REQUEST_METHOD"] != "GET":
-        return HttpResponse('405 Method ' + request.META["REQUEST_METHOD"] + ' Not Allowed', status=405)
-    
     request.user.pluser.color_blindness = PLUser.COLOR_BLINDNESS[(PLUser.COLOR_BLINDNESS.index((request.user.pluser.color_blindness, request.user.pluser.get_color_blindness_display()))+1)%len(PLUser.COLOR_BLINDNESS)][0]
     request.user.pluser.save()
     redirect_url = request.GET.get('from', None)

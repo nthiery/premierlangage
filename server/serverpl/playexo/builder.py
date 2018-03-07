@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Python 3.5.4
+# Python [3.6]
 #
 #  Author: Coumes Quentin     Mail: qcoumes@etud.u-pem.fr
 #  Created: 2017-06-21
@@ -12,13 +12,21 @@ from gitload.models import PL
 from playexo.models import Activity
 from playexo.exercise import Exercise, ExerciseTest
 
+
+
+
 class Builder():
     """ Parent class for every builder. methods '__create_template()' and '__create_context()' should be implemented in every child class. """
     def __init__(self, request, activity, pl=None, seed=None):
+        if type(activity) != Activity:
+            raise TypeError("Variable 'activity' should be of type '"+type(Activity)+"', not '"+type(activity)+"...")
+        if pl and type(pl) != PL:
+            raise TypeError("Variable 'pl' should be of type '"+type(PL)+"', not '"+type(pl)+"...")
         self.request = request
         self.activity_id = activity.id
         self.activity_name = activity.name
         self.pltp = activity.pltp
+        self.strategy = activity.strategy
         self.pl = pl
         self.pl_dic = None
         self.context = None
@@ -38,6 +46,7 @@ class PythonBuilder(Builder):
         self.pl_dic = dict()
         self.pl_dic['activity_name'] = self.activity_name
         self.pl_dic['activity_id'] = self.activity_id
+        self.pl_dic['strategy_name'] = self.strategy.name
         self.pl_dic['pltp_name'] = self.pltp.name
         self.pl_dic['pltp_title'] = json.loads(self.pltp.json)["title"]
         self.pl_dic['pltp_sha1'] = self.pltp.sha1

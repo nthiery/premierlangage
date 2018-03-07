@@ -14,4 +14,4 @@ doc/
 .cache/*
 .coverage/*
 documentation/templates/documentation/*
-documentation/static/documentation/*
+documentation/static/*

@@ -1,11 +1,3 @@
-echo "Checking dependencies..."
-#Checking if zip is installed
-if ! hash zip; then
-    echo "ERROR: zip should be installed. Try 'apt-get install zip'"
-    exit 1
-fi
-echo "zip: OK !"
-
 #Checking if python >= 3.5 is installed
 if ! hash python3; then
     echo "ERROR: Python >= 3.5 should be installed."
@@ -37,16 +29,6 @@ echo ""
 echo "Creating documentation..."
 ./make_doc.sh || { echo>&2 "ERROR: ./make_doc.sh failed" ; exit 1; }
 echo "Done !"
-
-#Creating ../tmp and ../log
-echo ""
-echo "Creating needed directories..."
-if [ ! -d "../../../tmp" ]; then
-	mkdir ../../../tmp || { echo>&2 "ERROR: Can't create ../../../tmp" ; exit 1; }
-fi
-if [ ! -f "../../../tmp/README" ]; then
-	echo "Directory used by premier langage, do not remove." > ../../../tmp/README
-fi
 
 #Building database
 echo ""

@@ -59,11 +59,11 @@
     <div class="col-md-1"></div>
 </div>
 
-<script src="{% static 'ace/ace.js' %}" type="text/javascript" charset="utf-8"></script>
+<script src="/static/AceCodeEditor/ace-builds/ace-builds-master/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
     <script>
         var editor = ace.edit('editor');
             editor.session.setMode("ace/mode/python");
-            editor.setTheme("ace/theme/monokai");
+            editor.setTheme("ace/theme/vibrant_ink");
 
         var input = $('input[name="code"]');
             editor.getSession().on("change", function () {

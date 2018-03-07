@@ -18,8 +18,7 @@ def execute(request):
     if request.META["REQUEST_METHOD"] == "HEAD":
         return HttpResponse('OK !', status=200)
     if request.META["REQUEST_METHOD"] != "POST":
-        mth=request.META["REQUEST_METHOD"]
-        return HttpResponse('405 Method ' +mth+ ' Not Allowed', status=405)
+        return HttpResponse('405 Method Not Allowed', status=405)
     
     return HttpResponse(Executor(request).execute())
 

@@ -26,10 +26,61 @@
         
         <ul class="nav nav-tabs nav-justified">
             <li class="nav-item"><a href="/gitload/loaded_pltp">PLTP</a></li>
+            <li class="nav-item"><a href="/gitload/loaded_pls">PLS</a></li>
             <li class="nav-item"><a href="/gitload/loaded_pl">PL</a></li>
             <li class="nav-item active"><a href="/gitload/activity">Activité</a></li>
         </ul>
         <br>
+        <br>
+        
+        <!-- Form to add new activity -->
+         <form action="" method="POST">
+            {% csrf_token %}
+            <div class="panel panel-primary" hidden>
+                <div class="panel-heading"><span class="glyphicon glyphicon-file"></span>&emsp;Créer une nouvelle activité</div>
+                <div class="panel-body">
+                    <div class=row>
+                        <div class="col-sm-2" style="margin-top: 20px">
+                            <center>
+                                <button class="btn btn-info" type="submit">
+                                    <span class="glyphicon glyphicon-plus-sign"></span>&emsp;Créer&emsp;
+                                </button>
+                            </center>
+                        </div>
+                        <div class="col-sm-4" style="margin-top: 20px">
+                            <div class="input-group">
+                                <span class="input-group-addon">Nom:</span>
+                                <input id="msg" type="text" class="form-control" name="activity_name" required>
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <span class="input">PLTP:</span>
+                            <select class="selectpicker" name="activity_pltp" title="Choisissez un PLTP" data-live-search="true" required>
+                                {% if pltps %}
+                                    {% for item in pltps %}
+                                        <option value="{{ item.sha1 }}">{{item.name}}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option disabled selected value>Aucun PLTP chargé</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <span class="input">Stratégie:</span>
+                            <select class="selectpicker" name="activity_strategy" title="Choisissez une Stratégie" data-live-search="true" required>
+                                {% if strategies %}
+                                    {% for item in strategies %}
+                                        <option value="{{ item.name }}">{{item.name}}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option disabled selected value>Aucune Stratégie chargée</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
         <br>
         
         <div class="container">
@@ -57,12 +108,13 @@
                                     <td><center>{{ item.id }}</center></td>
                                     <td><center>{{ item.name }}</center></td>
                                     <td><center>{{ item.pltp.name }}</center></td>
-                                    <td><center><a>{{ request.scheme }}://{{ request.get_host }}/playexo/activity/lti/{{ item.name }}/{{ item.pltp.sha1 }}/</a></center></td>
-                                    <p id="url{{forloop.counter}}" hidden>{{ request.scheme }}://{{ request.get_host }}/playexo/activity/lti/{{ item.name }}/{{ item.pltp.sha1 }}/</p>
+                                    <td><center>{{ item.strategy.name }}</center></td>
+                                    <td><center><a>{{ request.scheme }}://{{ request.get_host }}/playexo/activity/lti/{{ item.name }}/{{ item.strategy.name }}/{{ item.pltp.sha1 }}/</a></center></td>
+                                    <p id="url{{forloop.counter}}" hidden>{{ request.scheme }}://{{ request.get_host }}/playexo/activity/lti/{{ item.name }}/{{ item.strategy.name }}/{{ item.pltp.sha1 }}/</p>
                                     <td><center><button class="btn btn-primary" onclick="copyToClipboard('#url{{forloop.counter}}')">
                                         <span class="glyphicon glyphicon-edit"></span> Copier
                                     </td></center></a>
-                                    <td><center><a target="_blank" class="btn btn-primary" href="/playexo/activity/test/{{ item.name }}/{{ item.pltp.sha1 }}/">
+                                    <td><center><a target="_blank" class="btn btn-primary" href="/playexo/activity/test/{{ item.name }}/{{ item.strategy.name }}/{{ item.pltp.sha1 }}/">
                                         <span class="glyphicon glyphicon-cog"></span> Tester
                                     </td></center></a>
                                     <td>

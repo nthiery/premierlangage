@@ -1,0 +1,99 @@
+
+
+{% extends "gitload/base.html" %}
+
+{% block content %}
+    <div class="row">
+        <div class=col-md-1></div>
+        <div class=col-md-10>
+        
+        <ul class="nav nav-tabs nav-justified">
+          <li class="nav-item"><a href="/gitload/loaded_pltp">PLTP</a></li>
+          <li class="nav-item active"><a href="/gitload/loaded_pls">PLS</a></li>
+          <li class="nav-item"><a href="/gitload/loaded_pl">PL</a></li>
+          <li class="nav-item"><a href="/gitload/activity">Activité</a></li>
+        </ul>
+        <br>
+        <br>
+        <div class="container">
+            <a class="btn btn-primary" href="/gitload/browse/"><span class="glyphicon glyphicon-arrow-left"></span>&emsp;Retour</a>
+            <h2>PLS(s) Chargé(s):</h2>
+            <div class="row">
+                {% if pls %}       
+                    <table class="table table-hover table-condensed">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%"><center>Recharger</center></th>
+                                <th><center>Nom</center></th>
+                                <th><center>Dépot</center></th>
+                                <th><center>Chemin Relatif</center></th>
+                                <th style="width: 10%"><center>Supprimer</center></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pls %}
+                                <tr>
+                                    <td> <!-- Reload Button -->
+                                        <center>
+                                            <form action="" method="POST">
+                                                {% csrf_token %}
+                                                <input name="rel_path" value="{{ item.rel_path }}" type="hidden">
+                                                <input name="repo" value="{{ item.repository.name }}" type="hidden">
+                                                <button type="submit" class="btn btn-primary btn-block">
+                                                        <span class="glyphicon glyphicon-refresh"></span>
+                                                </button>
+                                            </form>
+                                        </center>
+                                    </td>
+                                    <td><center>{{ item.name }}</center></td>
+                                    <td><center>{{ item.repository.name }}</center></td>
+                                    <td><center>{{ item.rel_path }}</center></td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-block" data-toggle="modal" data-target="#delete{{pls.name}}"/>
+                                            <span class="glyphicon glyphicon-remove"></span>
+                                        </button>
+                                        <div id="delete{{pls.name}}" class="modal fade" role="dialog">
+                                            <div class="modal-dialog modal-md">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                                        <center><h4 class="modal-title">Êtes vous sûr de vouloir supprimer {{ item.name }}?</h4></center>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row">
+                                                            <div class="col-sm-3">
+                                                                <form action="" method="POST">
+                                                                    {% csrf_token %}
+                                                                    <button type="submit" class="btn btn-warning btn-block" name="pls_delete" value="{{ item.name }}">
+                                                                            <span class="glyphicon glyphicon-ok"></span>&emsp;<b>Oui</b>
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                            <div class="col-sm-6"></div>
+                                                            <div class="col-sm-3">
+                                                                <button type="button" class="btn btn-danger btn-block" data-dismiss="modal">
+                                                                    <span class="glyphicon glyphicon-remove"></span>&emsp;<b>Non</b>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="alert alert-danger">
+                        Aucun PLS actuellement chargé.
+                    </div>
+                {% endif %}
+            </div>
+            <a class="btn btn-primary" href="/gitload/browse/"><span class="glyphicon glyphicon-arrow-left"></span>&emsp;Retour</a>
+        </div>
+        
+        <div class=col-md-1></div>
+    </div>
+{% endblock %}

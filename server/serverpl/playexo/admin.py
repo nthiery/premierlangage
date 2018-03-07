@@ -4,7 +4,7 @@ from playexo.models import Activity, Answer
 
 @admin.register(Activity)
 class ActivityAdmin(admin.ModelAdmin):
-    list_display=('__str__', 'id', 'pltp', 'open')
+    list_display=('__str__', 'strategy', 'pltp')
 
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):

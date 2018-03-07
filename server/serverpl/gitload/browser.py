@@ -3,15 +3,13 @@
 #
 #
 
-import os, git, logging, re, subprocess, sys
-
-from urllib.parse import urlparse
+import os, git, logging, re, subprocess
 
 from serverpl.settings import DIRREPO
 
 from os.path import isdir
 
-from gitload.loader import loadPLTP, loadPL, updatePLTP
+from gitload.loader import loadPLTP, loadPLS, loadPL, updatePLTP
 from gitload.models import Repository
 
 logger = logging.getLogger(__name__)
@@ -19,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class Browser():
+    
+    
     def __init__(self, repository, dic = None):
         """ Members will be initialized with a dictionnary if provided """
         
@@ -46,34 +46,27 @@ class Browser():
                 setattr(self, k, v)
     
     
-    def get_repo(self, username=None, password=None):
+    def get_repo(self):
         """ Create or replace self.path with a new clone of self.url
             Update self.version """
         if self.name == 'plbank':
-            return True, ""
-        
-        cwd = os.getcwd()
-        url = urlparse(self.url)
+            return True
         
         try:
-            os.chdir(DIRREPO)
-            if username and password:
-                p = subprocess.Popen('git clone ' +url.scheme+'://'+username+":"+password+"@"+url.netloc+url.path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            if not os.path.isdir(self.root):
+                repo = git.Repo.clone_from(self.url, self.root)
             else:
-                p = subprocess.Popen('GIT_TERMINAL_PROMPT=0 git clone ' + self.url, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            out, err = p.communicate()
+                repo = git.Repo.init(self.root)
             
-            if p.returncode:
-                if "terminal prompts disabled" in err.decode("utf-8"): # Repo is private and needs credentials
-                    return False, "Ce dépot et privé, merci d'entrer vos identifiants correspondant à celui-ci"
-                return False, out.decode("utf-8").replace(password,10*'•').replace('\n','<br>') + '\n' + err.decode("utf-8").replace(password,10*'•').replace('\n','<br>')
-        
-        except Exception as e:
-            return False, str(type(e)).replace(password,10*'•').replace('<', '[').replace('>', ']') + " : " + str(e)
-        
-        finally:
-            os.chdir(cwd)
-        return True, ""
+            repo.git.pull(self.url)
+        except:
+            return False
+
+        self.version = repo.heads.master.commit.name_rev[:40]
+        repo_object = Repository.objects.get(name=self.name)
+        repo_object.version = self.version
+        repo_object.save()
+        return True
     
     
     
@@ -96,7 +89,7 @@ class Browser():
         if exit_code:
             os.system("git reset HEAD~")
             os.chdir(cwd)
-            return out.decode("utf-8").replace(password,10*'•').replace('\n','<br>') + err.decode("utf-8").replace(password,10*'•').replace('\n','<br>')
+            return out.decode("utf-8").replace(password,len(password)*'x').replace('\n','<br>') + err.decode("utf-8").replace(password,len(password)*'x').replace('\n','<br>')
         
         os.chdir(cwd)
         return None
@@ -111,7 +104,7 @@ class Browser():
         self.other_list = list()
         self.pl_list = list()
         
-        pattern = re.compile("(.)+\.(pltp)$")
+        pattern = re.compile("(.)+\.(pl(\w)+)$")
         
         for (path, subdirs, files) in os.walk(self.current_path):
             for filename in files:
@@ -135,6 +128,10 @@ class Browser():
     
     def load_pl(self, rel_path, repository):
         return loadPL(rel_path, repository)
+        
+        
+    def load_pls(self, rel_path, repository, force=False):
+        return loadPLS(rel_path, repository, force=force)
     
     
     def load_pltp(self, rel_path, repository, force=False):

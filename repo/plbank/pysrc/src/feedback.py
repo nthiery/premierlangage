@@ -30,12 +30,10 @@ class Feedback:
         self.feedbacktext=""
         self.asio=False
         self.template = Template('''
-        
 {%- if  feedback.compile %}
     <h3> Erreur de Compilation</h3>{{- feedback.compilationError }}
     {{ feedback.feedbacktext }}
 {%- else %}
-    
     {% if feedback.asio %}
         {%- for type,text in feedback.executionhistory %}
             {%- if feedback.showinput and type=="input" %}
@@ -64,16 +62,9 @@ class Feedback:
                 </span>
             {%- endif %}
             {%- if type=="output" %}
-            
-				{%- if text=="reussit" %}
-					<span style="color:green">
-						<p><br/>{{text}}</p>
-					</span>
-				{%-elif text!="reussit" %}
-					<span style="color:red">
-						<p><br/>{{text}}</p>
-					</span>
-				{%-endif %}
+                <span color="red">
+                    <p><br/>{{text}}</p>
+                </span>
             {%- endif %}
         {%- endfor %}
     {%- endif %}
