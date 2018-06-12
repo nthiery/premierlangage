@@ -61,9 +61,12 @@
       <p>
       {% if question.closed %}
           <p class="pull-right">This Question has been closed.</p>
+          <a class="btn btn-primary btn-sm pull-right" href="{% url 'qa_index'  %}" role="button">Retour question</a>
+
       {% else %}
           <a class="btn btn-primary btn-sm pull-right" href="{% url 'qa_create_answer' question.id %}" role="button">Answer this Question!</a>
           <a class="btn btn-primary btn-sm pull-right" href="{% url 'qa_create_question_comment' question.id %}" role="button">Comment this Question!</a>
+          <a class="btn btn-primary btn-sm pull-right" href="{% url 'qa_index'  %}" role="button">Retour question</a>
           <form action="{% url 'qa_close_question' question.id %}" method="POST">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.path }}"/>

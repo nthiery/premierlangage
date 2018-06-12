@@ -131,6 +131,7 @@ a {
 .qa-header {
     text-decoration: none;
     color: grey !important;
+    padding-right:10px;
 }
 
 .search-bar {

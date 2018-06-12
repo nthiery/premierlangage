@@ -22,7 +22,7 @@ from playexo.models import Activity
 class Profile(models.Model):
     """Extends User to save more informations about an user."""
     
-    user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     student_id = models.PositiveIntegerField(unique=True, null=True, blank=True)
     consumer_id = models.PositiveIntegerField(unique=True, null=True, blank=True)
     editor_theme = EnumIntegerField(EditorTheme, default=EditorTheme.MONOKAI)

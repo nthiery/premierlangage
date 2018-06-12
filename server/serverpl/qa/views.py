@@ -206,10 +206,12 @@ class QuestionsByTagView(ListView):
 
     def get_queryset(self, **kwargs):
         return Question.objects.filter(tags__slug=self.kwargs['tag'])
+        
 
     def get_context_data(self, *args, **kwargs):
         context = super(
             QuestionsByTagView, self).get_context_data(*args, **kwargs)
+        
         context['active_tab'] = self.request.GET.get('active_tab', 'latest')
         tabs = ['latest', 'unans', 'reward']
         context['active_tab'] = 'latest' if context['active_tab'] not in\
