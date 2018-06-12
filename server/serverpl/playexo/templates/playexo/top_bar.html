@@ -29,7 +29,12 @@
                     {% endif %}
                     {% if request.user.profile.can_load %}
                         <li class="nav-item">
-                            <a class="nav-link" href="/documentation/"></i><i class="fas fa-book"></i> Documentation</a>
+                            <a class="nav-link" href="/documentation/"><i class="fas fa-book"></i> Documentation</a>
+                        </li>
+                    {% endif %}
+                    {% if request.user.profile.can_load %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/ask/"><i class="fas fa-question"></i> AskBot</a>
                         </li>
                     {% endif %}
                     {% if request.user.pluser.is_admin or request.user.is_superuser %}

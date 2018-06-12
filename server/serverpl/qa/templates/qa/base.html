@@ -1,0 +1,70 @@
+
+
+{% load static %}
+
+
+{% block content %}
+    <link rel="icon" type="image/png" href="static/qa/icon.ico">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" />
+    <link href="{% static 'css/qa.css' %}" rel="stylesheet"/>
+    <script src="{% static 'js/jquery_3.1.1.js' %}" ></script>
+    <script src="{% static 'js/tether.min.js' %}" ></script>
+    <script src="{% static 'js/popper.js' %}" ></script>
+    <script src="{% static 'js/bootstrap.js' %}" ></script>
+    <script src="{% static 'js/fontawesome-all.js' %}" ></script>
+    <div class="container">
+        <div class="card qa-card">
+            <div class="card-header qa-card-header">
+                <div class="row">
+                    <div class="col-md-6" >
+                        <h2>
+                            <a class="qa-header" href="{% url 'qa_index' %}">
+                                <img width="40px" src="{% static 'img/qa_icon.png'%}" />
+                                Top Questions
+                            </a>
+                        </h2>
+                    </div>
+                    <div class="col-md-6" >
+                        <a class="btn btn-secondary float-right" href="{% url 'qa_create_question' %}">
+                            <i class="fas fa-plus"></i> Ask Question
+                        </a>
+                        <form class="search-bar" method="GET" action="{% url 'qa_search' %}">
+                            <div class="input-group mb-2">
+                                <div class="input-group-prepend">
+                                    <button class="input-group-text btn btn-outline btn-secondary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                                <input class="form-control" placeholder="Search..." type="text">
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                {% block contentqa %}
+
+                {% endblock contentqa %}
+            </div>
+        </div>
+    </div>
+    {% block js %}
+    <script>
+        $(function () {
+            $('a[href="#search"]').on('click', function(event) {
+                event.preventDefault();
+                $('#search').addClass('open');
+                $('#search > form > input[type="search"]').focus();
+            });
+            
+            $('#search, #search button.close').on('click keyup', function(event) {
+                if (event.target == this || event.target.className == 'close' || event.keyCode == 27) {
+                    $(this).removeClass('open');
+                }
+            });
+        });
+    </script>
+    {% endblock js %}
+    {%block extra_js %}{% endblock extra_js %}
+{% endblock %}

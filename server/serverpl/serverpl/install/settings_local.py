@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'sandbox',
     'documentation',
     'markdown_deux',
-    #'qa',
+    'qa',
     'taggit',
     'hitcount',
     'django_markdown',
@@ -232,6 +232,24 @@ LOGGING = {
             'level': 'INFO',
         },
     },
+}
+
+
+# QA Settings, see https://django-qa.readthedocs.io/en/latest/settings.html
+QA_SETTINGS = {
+    'qa_messages': True,
+    'qa_description_optional': False,
+    'reputation': {
+        'CREATE_QUESTION': 2,
+        'CREATE_ANSWER': 2,
+        'CREATE_ANSWER_COMMENT': 1,
+        'CREATE_QUESTION_COMMENT': 1,
+        'ACCEPT_ANSWER': 10,
+        'UPVOTE_QUESTION': 1,
+        'UPVOTE_ANSWER': 1,
+        'DOWNVOTE_QUESTION': -1,
+        'DOWNVOTE_ANSWER': -1,
+    }
 }
 
 
