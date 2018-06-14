@@ -22,14 +22,14 @@
                         <a class="btn btn-secondary float-right" href="{% url 'qa_create_question' %}">
                             <i class="fas fa-plus"></i> Ask Question
                         </a>
-                        <form class="search-bar" method="GET" action="{% url 'qa_search' %}">
+                        <form class="search-bar" method="GET" action="{% url 'qa_search'%}">
                             <div class="input-group mb-2">
                                 <div class="input-group-prepend">
-                                    <button class="input-group-text btn btn-outline btn-secondary" type="submit">
+                                    <button class="input-group-text btn btn-outline btn-secondary" type="submit" id="search_bar">
                                         <i class="fas fa-search"></i>
                                     </button>
                                 </div>
-                                <input class="form-control" id="search_bar" type="text" placeholder="Search..">
+                                <input class="form-control" type="text" placeholder="Search..">
                             </div>
                         </form>
                     </div>

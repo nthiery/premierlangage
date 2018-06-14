@@ -170,7 +170,11 @@ class QuestionsSearchView(QuestionIndexView):
     Display a ListView page inherithed from the QuestionIndexView filtered by
     the search query and sorted by the different elements aggregated.
     """
-
+    model = Question
+    paginate_by = 10
+    context_object_name = 'questions'
+    template_name = 'qa/index.html'
+    
     def get_queryset(self):
         result = super(QuestionsSearchView, self).get_queryset()
         query = self.request.GET.get('word', '')

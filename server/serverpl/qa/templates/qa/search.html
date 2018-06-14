@@ -1,0 +1,16 @@
+{% extends 'qa/base.html' %}
+{% load django_markdown %}
+
+{% block content %}
+
+    
+  
+
+
+
+{% endblock content %}
+
+{% block extra_js %}
+  {% markdown_editor "#id_description" %}
+  {% markdown_media %}
+{% endblock extra_js %}
